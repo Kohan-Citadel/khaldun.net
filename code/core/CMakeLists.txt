@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.22)
+cmake_minimum_required (VERSION 3.5)
 
 project(openspy_core)
 
@@ -67,7 +67,16 @@ IF(WIN32)
 	file(GLOB PLAT_LOGGER_HDRS "OS/Logger/Win32/*.h")	
 	source_group("Headers\\OS\\Logger\\Win32\\" FILES ${PLAT_LOGGER_HDRS})
 
-	set (ALL_PLAT ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS})
+	file(GLOB PLAT_TIMER_SRCS "OS/Timer/Win32/*.cpp")
+	source_group("Sources\\OS\\Timer\\Win32\\" FILES ${PLAT_TIMER_SRCS})
+
+	file(GLOB PLAT_TIMER_HDRS "OS/Timer/Win32/*.h")	
+	source_group("Headers\\OS\\Timer\\Win32\\" FILES ${PLAT_TIMER_HDRS})
+
+	set (ALL_PLAT ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS} ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS} ${PLAT_TIMER_SRCS} ${PLAT_TIMER_HDRS})
+	add_library (openspy SHARED ${ALL_SRCS} ${ALL_PLAT})
+	target_link_libraries(openspy ws2_32.lib ${CURL_LIBRARIES} pugixml rabbitmq::rabbitmq ${JANSSON_LIBRARIES} ${hiredis_LIBRARIES} ${SSL_LIBS})
+	add_definitions(-DEVTMGR_USE_SELECT=1)
 ELSE() #unix
 	file(GLOB PLAT_LOGGER_SRCS "OS/Logger/Unix/*.cpp")
 	source_group("Sources\\OS\\Logger\\Unix\\" FILES ${PLAT_LOGGER_SRCS})
@@ -77,7 +86,17 @@ ELSE() #unix
 
 	set (ALL_PLAT ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS})
 
-	
+	file(GLOB PLAT_TIMER_HDRS "OS/Timer/Unix/*.h")	
+	source_group("Headers\\OS\\Timer\\Unix\\" FILES ${PLAT_TIMER_HDRS})
+
+	set (ALL_PLAT ${PLAT_THREAD_SRCS} ${PLAT_THREAD_HDRS} ${PLAT_LOGGER_SRCS} ${PLAT_LOGGER_HDRS} ${PLAT_TIMER_SRCS} ${PLAT_TIMER_HDRS})
+	add_library (openspy SHARED ${ALL_SRCS} ${ALL_PLAT})
+	target_link_libraries(openspy pthread ${CURL_LIBRARIES} z pugixml rabbitmq::rabbitmq ${JANSSON_LIBRARIES} ${hiredis_LIBRARIES} ${SSL_LIBS})
+	if(APPLE)
+	add_definitions(-DEVTMGR_USE_SELECT=1)
+	else()
+	add_definitions(-DEVTMGR_USE_EPOLL=1)
+	endif()
 ENDIF()
 add_library (openspy SHARED ${ALL_SRCS} ${ALL_PLAT})
 target_link_libraries(openspy ${CURL_LIBRARIES} pugixml rabbitmq::rabbitmq libuv::uv jansson::jansson hiredis::hiredis hiredis::hiredis_ssl ${SSL_LIBS})
